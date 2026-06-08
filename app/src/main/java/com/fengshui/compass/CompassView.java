@@ -11,69 +11,67 @@ import android.util.AttributeSet;
 import android.view.View;
 
 /**
- * 专业风水罗盘盘面绘制View
+ * 专业风水罗盘盘面绘制View - 1:1复刻真实罗盘
  * 
- * 盘面结构（从外到内）：
- * 1. 外圈装饰
- * 2. 二十八星宿（28 Lunar Mansions）— 最外圈
- * 3. 一百二十分金（120 Golden Points）
- * 4. 六十甲子（60 Sexagenary Cycle）
- * 5. 天盘缝针（24山 +7.5° 缝针）
- * 6. 人盘中针（24山 -7.5° 中针）
- * 7. 地盘正针（24山 0° 正针）
- * 8. 六十四卦（64 Hexagrams）
- * 9. 后天八卦（8 Trigrams）
- * 10. 360度刻度
- * 11. 指针系统
+ * 真实罗盘圈层结构（从外向内）：
+ * 1. 外圈装饰边
+ * 2. 二十八星宿（最外圈）
+ * 3. 一百二十分金
+ * 4. 六十甲子
+ * 5. 天盘缝针（24山 +7.5°）
+ * 6. 人盘中针（24山 -7.5°）
+ * 7. 地盘正针（24山 0°）
+ * 8. 六十四卦
+ * 9. 先天八卦/后天八卦
+ * 10. 天池（中心太极+指针）
+ * 
+ * 指针特点：磁针一端尖（指南），一端有角（指北）
  */
 public class CompassView extends View {
 
-    private float azimuth = 0f; // 当前方位角度
+    private float azimuth = 0f;
 
-    // 颜色定义
-    private static final int COLOR_BG = 0xFF1A1A2E;
-    private static final int COLOR_RING_OUTER = 0xFFD4A574;
-    private static final int COLOR_RING_INNER = 0xFF2D2D44;
-    private static final int COLOR_TEXT_GOLD = 0xFFD4A574;
-    private static final int COLOR_TEXT_RED = 0xFFE74C3C;
-    private static final int COLOR_TEXT_GREEN = 0xFF27AE60;
-    private static final int COLOR_TEXT_BLUE = 0xFF3498DB;
+    // ========== 颜色定义 ==========
+    private static final int COLOR_BG = 0xFF1A1A2E;           // 深蓝黑背景
+    private static final int COLOR_RING_GOLD = 0xFFD4A574;    // 金色圈线
+    private static final int COLOR_RING_DARK = 0xFF3D3D55;    // 深色圈线
+    private static final int COLOR_TEXT_GOLD = 0xFFD4A574;    // 金色文字
+    private static final int COLOR_TEXT_RED = 0xFFE74C3C;     // 红色文字（子午卯酉）
+    private static final int COLOR_TEXT_BLUE = 0xFF6B9BD1;    // 蓝色（天盘）
+    private static final int COLOR_TEXT_GREEN = 0xFF7CB87C;   // 绿色（人盘）
     private static final int COLOR_TEXT_WHITE = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_DARK = 0xFFA09070;
-    private static final int COLOR_NEEDLE_RED = 0xFFE74C3C;
-    private static final int COLOR_NEEDLE_BLACK = 0xFF2C3E50;
-    private static final int COLOR_CENTER_DOT = 0xFFD4A574;
-    private static final int COLOR_TICK = 0xFFD4A574;
-    private static final int COLOR_BAGUA_BG = 0xFF3D3D55;
-    private static final int COLOR_HEXAGRAM_LINE = 0xFF8B7355;
-    private static final int COLOR_HEXAGRAM_BG = 0xFF2A2A40;
+    private static final int COLOR_TEXT_GRAY = 0xFF9090A0;    // 灰色辅助文字
+    private static final int COLOR_NEEDLE_SOUTH = 0xFFE74C3C; // 红针（南/尖头）
+    private static final int COLOR_NEEDLE_NORTH = 0xFF2C3E50; // 黑针（北/有角）
+    private static final int COLOR_CENTER_BG = 0xFF2A2A40;   // 天池背景
+    private static final int COLOR_RED_LINE = 0xFFE74C3C;     // 天池底部红线
+    private static final int COLOR_BAGUA_BG = 0xFF252540;    // 八卦背景
 
+    // ========== 画笔 ==========
     private Paint paint;
     private Paint textPaint;
     private Paint tickPaint;
     private Paint needlePaint;
-    private Paint baguaPaint;
-    private Paint hexagramPaint;
-    private Paint hexagramBgPaint;
     private Paint sectorPaint;
 
+    // ========== 尺寸相关 ==========
     private float centerX, centerY, radius;
     private float density;
 
     // ========== 24山数据 ==========
     private static final String[] MOUNTAINS_24 = {
-        "子", "癸", "丑", "艮", "寅", "甲",
-        "卯", "乙", "辰", "巽", "巳", "丙",
-        "午", "丁", "未", "坤", "申", "庚",
-        "酉", "辛", "戌", "乾", "亥", "壬"
+        "壬", "子", "癸", "丑", "艮", "寅",
+        "甲", "卯", "乙", "辰", "巽", "巳",
+        "丙", "午", "丁", "未", "坤", "申",
+        "庚", "酉", "辛", "戌", "乾", "亥"
     };
 
-    // 24山对应的角度（中心角度）
+    // 24山中心角度
     private static final float[] MOUNTAIN_ANGLES = {
-        0f, 15f, 30f, 45f, 60f, 75f,
-        90f, 105f, 120f, 135f, 150f, 165f,
-        180f, 195f, 210f, 225f, 240f, 255f,
-        270f, 285f, 300f, 315f, 330f, 345f
+        345f, 0f, 15f, 30f, 45f, 60f,
+        75f, 90f, 105f, 120f, 135f, 150f,
+        165f, 180f, 195f, 210f, 225f, 240f,
+        255f, 270f, 285f, 300f, 315f, 330f
     };
 
     // ========== 后天八卦 ==========
@@ -85,12 +83,6 @@ public class CompassView extends View {
     };
 
     // ========== 二十八星宿 ==========
-    // 顺序：从角宿（约东偏南）开始，按逆时针排列
-    // 实际罗盘中二十八星宿对应24山方位
-    // 角(辰/巽之间) 亢(辰) 氐(卯/辰之间) 房(卯) 心(卯/寅之间) 尾(寅) 箕(寅/丑之间)
-    // 斗(丑) 牛(丑/子之间) 女(子) 虚(子/亥之间) 危(亥) 室(亥/乾之间) 壁(乾)
-    // 奎(戌/乾之间) 娄(戌) 胃(酉/戌之间) 昴(酉) 毕(酉/申之间) 觜(申) 参(申/坤之间)
-    // 井(未/坤之间) 鬼(未) 柳(午/未之间) 星(午) 张(午/巳之间) 翼(巳) 轸(巳/辰之间)
     private static final String[] XIU_28 = {
         "角", "亢", "氐", "房", "心", "尾", "箕",
         "斗", "牛", "女", "虚", "危", "室", "壁",
@@ -98,36 +90,19 @@ public class CompassView extends View {
         "井", "鬼", "柳", "星", "张", "翼", "轸"
     };
 
-    // 二十八星宿对应的中心角度（度），从正北顺时针
-    // 每个星宿占约12.857度（360/28）
-    private static final float[] XIU_ANGLES = new float[28];
+    // 二十八星宿中心角度（每宿12.857度，从特定位置开始）
+    private static final float[] XIU_ANGLES;
     static {
-        // 角宿起始于约112.5度（辰宫中间偏左）
-        // 按每个星宿约12.857度排列
-        float startAngle = 112.5f;
+        XIU_ANGLES = new float[28];
+        float startAngle = 112.5f;  // 角宿起始位置
         float step = 360f / 28f;
         for (int i = 0; i < 28; i++) {
             float angle = startAngle + i * step;
             if (angle >= 360) angle -= 360;
+            if (angle < 0) angle += 360;
             XIU_ANGLES[i] = angle;
         }
     }
-
-    // 二十八星宿五行属性
-    private static final String[] XIU_WUXING = {
-        "木", "金", "土", "日", "月", "火", "水",  // 东方青龙七宿
-        "木", "金", "土", "日", "月", "火", "水",  // 北方玄武七宿
-        "木", "金", "土", "日", "月", "火", "水",  // 西方白虎七宿
-        "木", "金", "土", "日", "月", "火", "水"   // 南方朱雀七宿
-    };
-
-    // 二十八星宿所属七曜（星期）
-    private static final String[] XIU_QIYAO = {
-        "日", "月", "火", "水", "木", "金", "土",  // 角亢氐房心尾箕
-        "日", "月", "火", "水", "木", "金", "土",  // 斗牛女虚危室壁
-        "日", "月", "火", "水", "木", "金", "土",  // 奎娄胃昴毕觜参
-        "日", "月", "火", "水", "木", "金", "土"   // 井鬼柳星张翼轸
-    };
 
     // ========== 六十甲子 ==========
     private static final String[] SEXAGENARY = {
@@ -139,21 +114,7 @@ public class CompassView extends View {
         "甲寅", "乙卯", "丙辰", "丁巳", "戊午", "己未", "庚申", "辛酉", "壬戌", "癸亥"
     };
 
-    // ========== 一百二十分金 ==========
-    // 120个分金位（每个3度），只标注有意义的
-    // 实际罗盘上只标注部分分金（如丙午丁等）
-    private static final String[] FENJIN_120 = new String[120];
-
-    // 天干分金配对（用于一百二十分金）
-    private static final String[] FENJIN_TIANGAN = {
-        "甲", "丙", "戊", "庚", "壬"  // 阳干
-    };
-    private static final String[] FENJIN_TIANGAN_YIN = {
-        "乙", "丁", "己", "辛", "癸"  // 阴干
-    };
-
     // ========== 六十四卦 ==========
-    // 六十四卦名称
     private static final String[] HEXAGRAM_64 = {
         "乾", "坤", "屯", "蒙", "需", "讼", "师", "比",
         "小畜", "履", "泰", "否", "同人", "大有", "谦", "豫",
@@ -166,14 +127,11 @@ public class CompassView extends View {
         "既济", "未济"
     };
 
-    // 六十四卦在罗盘中的方位角度（从正北顺时针）
-    // 每卦占5.625度
-    private static final float[] HEX_ANGLES = new float[64];
-    static {
-        for (int i = 0; i < 64; i++) {
-            HEX_ANGLES[i] = i * (360f / 64f);
-        }
-    }
+    // ========== 分金天干 ==========
+    private static final String[] FENJIN_LABELS = {
+        "甲", "", "丙", "", "戊", "", "庚", "", "壬", "",
+        "", "乙", "", "丁", "", "己", "", "辛", "", "癸"
+    };
 
     public CompassView(Context context) {
         super(context);
@@ -189,54 +147,14 @@ public class CompassView extends View {
         density = getResources().getDisplayMetrics().density;
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTypeface(Typeface.DEFAULT_BOLD);
-
         tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
         needlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        baguaPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        baguaPaint.setStyle(Paint.Style.FILL);
-
-        hexagramPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        hexagramPaint.setStyle(Paint.Style.STROKE);
-        hexagramPaint.setStrokeWidth(2 * density);
-
-        hexagramBgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        hexagramBgPaint.setStyle(Paint.Style.FILL);
-
         sectorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        sectorPaint.setStyle(Paint.Style.FILL);
-
-        // 初始化一百二十分金
-        initFenjin();
     }
 
-    /**
-     * 初始化一百二十分金数据
-     */
-    private void initFenjin() {
-        for (int i = 0; i < 120; i++) {
-            // 120分金对应360度，每3度一个分金
-            // 实际罗盘只标注特定分金位
-            // 分金用天干表示：甲丙戊庚壬（阳）乙丁己辛癸（阴）
-            int tianGanIndex = i % 10;
-            if (tianGanIndex < 5) {
-                // 阳干
-                FENJIN_120[i] = FENJIN_TIANGAN[tianGanIndex];
-            } else {
-                // 阴干
-                FENJIN_120[i] = FENJIN_TIANGAN_YIN[tianGanIndex - 5];
-            }
-        }
-    }
-
-    /**
-     * 更新方位角
-     */
     public void setAzimuth(float azimuth) {
         this.azimuth = azimuth;
         invalidate();
@@ -247,108 +165,102 @@ public class CompassView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         centerX = w / 2f;
         centerY = h / 2f;
-        float padding = 10 * density;
+        float padding = 8 * density;
         radius = Math.min(centerX, centerY) - padding;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
-        // 背景
         canvas.drawColor(COLOR_BG);
 
-        // 绘制罗盘（盘面不动，指针旋转）
-        // 从外到内绘制各圈层
-
-        // 1. 外圈装饰
-        drawOuterRing(canvas);
-
-        // 2. 二十八星宿（最外圈）
-        draw28Xiu(canvas);
-
-        // 3. 一百二十分金
-        draw120Fenjin(canvas);
-
-        // 4. 六十甲子
-        draw60Sexagenary(canvas);
-
-        // 5. 天盘缝针（+7.5°）
-        drawTianPan(canvas);
-
-        // 6. 人盘中针（-7.5°）
-        drawRenPan(canvas);
-
-        // 7. 地盘正针（24山 0°）
-        drawDiPan(canvas);
-
-        // 8. 六十四卦
-        draw64Hexagram(canvas);
-
-        // 9. 后天八卦
-        drawBagua(canvas);
-
-        // 10. 360度刻度
-        drawDegreeTicks(canvas);
-
-        // 11. 中心太极圈
-        drawCenterCircle(canvas);
-
-        // 12. 指针
-        drawNeedle(canvas);
-
-        // 13. 方位信息
-        drawDirectionText(canvas);
+        // 绘制各圈层（从外向内）
+        drawOuterBorder(canvas);           // 1. 外圈装饰
+        drawOuterDecoration(canvas);        // 2. 外圈装饰细节
+        draw28Xiu(canvas);                  // 3. 二十八星宿
+        drawFenjin(canvas);                 // 4. 一百二十分金
+        drawSexagenary(canvas);             // 5. 六十甲子
+        drawTianPan(canvas);                // 6. 天盘缝针
+        drawRenPan(canvas);                  // 7. 人盘中针
+        drawDiPan(canvas);                   // 8. 地盘正针（24山主圈）
+        drawHexagram(canvas);                // 9. 六十四卦
+        drawBagua(canvas);                   // 10. 后天八卦
+        drawDegreeScale(canvas);             // 11. 360度刻度（在外八卦和天池之间）
+        drawTianchi(canvas);                 // 12. 天池（中心）
+        drawNeedle(canvas);                  // 13. 指针
+        drawInfo(canvas);                    // 14. 信息显示
     }
 
     // ========================================================================
     // 1. 外圈装饰
     // ========================================================================
-    private void drawOuterRing(Canvas canvas) {
-        // 最外圈粗金边
+    private void drawOuterBorder(Canvas canvas) {
+        // 最外层粗金边
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(4 * density);
-        paint.setColor(COLOR_RING_OUTER);
+        paint.setColor(COLOR_RING_GOLD);
         canvas.drawCircle(centerX, centerY, radius, paint);
 
-        // 第二圈细金边
+        // 第二层细金边
         paint.setStrokeWidth(1.5f * density);
-        paint.setColor(COLOR_RING_INNER);
-        canvas.drawCircle(centerX, centerY, radius - 2 * density, paint);
+        paint.setColor(COLOR_RING_DARK);
+        canvas.drawCircle(centerX, centerY, radius - 3 * density, paint);
+    }
+
+    private void drawOuterDecoration(Canvas canvas) {
+        // 绘制四正方向的红色三角标记
+        float[] cardinalAngles = {0f, 90f, 180f, 270f};  // 北、东、南、西
+        float r = radius - 1 * density;
+        
+        for (float angle : cardinalAngles) {
+            float rad = (float) Math.toRadians(angle - 90);
+            float x = centerX + r * (float) Math.cos(rad);
+            float y = centerY + r * (float) Math.sin(rad);
+            
+            // 画小三角
+            Path tri = new Path();
+            tri.moveTo(x, y);
+            float triSize = 6 * density;
+            float rad1 = rad + (float) Math.toRadians(120);
+            float rad2 = rad - (float) Math.toRadians(120);
+            tri.lineTo(x + triSize * (float) Math.cos(rad1), y + triSize * (float) Math.sin(rad1));
+            tri.lineTo(x + triSize * (float) Math.cos(rad2), y + triSize * (float) Math.sin(rad2));
+            tri.close();
+            
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(COLOR_TEXT_RED);
+            canvas.drawPath(tri, paint);
+        }
     }
 
     // ========================================================================
-    // 2. 二十八星宿
+    // 3. 二十八星宿（最外圈）
     // ========================================================================
     private void draw28Xiu(Canvas canvas) {
-        float ringWidth = 28 * density;
-        float outerR = radius - 4 * density;
+        float ringWidth = 30 * density;
+        float outerR = radius - 5 * density;
         float innerR = outerR - ringWidth;
+        float textR = (outerR + innerR) / 2f;
 
-        // 绘制星宿背景扇区（每个星宿一个扇区）
+        // 绘制背景
         float stepAngle = 360f / 28f;
         for (int i = 0; i < 28; i++) {
             float startAngle = XIU_ANGLES[i] - stepAngle / 2f;
-            float sweepAngle = stepAngle;
-
-            // 交替背景色
+            
             if (i % 2 == 0) {
                 sectorPaint.setColor(0xFF252540);
             } else {
                 sectorPaint.setColor(0xFF2A2A48);
             }
-
-            RectF rect = new RectF(
-                centerX - outerR, centerY - outerR,
-                centerX + outerR, centerY + outerR
-            );
-            canvas.drawArc(rect, -90 + startAngle, sweepAngle, true, sectorPaint);
+            
+            RectF rect = new RectF(centerX - outerR, centerY - outerR, centerX + outerR, centerY + outerR);
+            canvas.drawArc(rect, startAngle - 90, stepAngle, true, sectorPaint);
         }
 
         // 绘制分隔线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(0.5f * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         for (int i = 0; i < 28; i++) {
             float angle = (float) Math.toRadians(XIU_ANGLES[i] - stepAngle / 2f);
             float sx = centerX + innerR * (float) Math.sin(angle);
@@ -358,537 +270,522 @@ public class CompassView extends View {
             canvas.drawLine(sx, sy, ex, ey, paint);
         }
 
-        // 绘制星宿名称和五行
-        float textR = (outerR + innerR) / 2f;
+        // 绘制星宿名（内侧）和七曜（外侧）
+        textPaint.setTextSize(11 * density);
         for (int i = 0; i < 28; i++) {
-            float rad = (float) Math.toRadians(XIU_ANGLES[i]);
-
-            // 星宿名称（大号字）
-            textPaint.setTextSize(13 * density);
+            float rad = (float) Math.toRadians(XIU_ANGLES[i] - 90);
+            
+            // 星宿名
             textPaint.setColor(COLOR_TEXT_GOLD);
-            float tx = centerX + (textR - 2 * density) * (float) Math.sin(rad);
-            float ty = centerY - (textR - 2 * density) * (float) Math.cos(rad) + 5 * density;
-            canvas.drawText(XIU_28[i], tx, ty, textPaint);
-
-            // 七曜标注（小号字，在名称下方偏外）
-            textPaint.setTextSize(8 * density);
-            textPaint.setColor(COLOR_TEXT_DARK);
-            float qx = centerX + (textR + 8 * density) * (float) Math.sin(rad);
-            float qy = centerY - (textR + 8 * density) * (float) Math.cos(rad) + 3 * density;
-            canvas.drawText(XIU_QIYAO[i], qx, qy, textPaint);
-
-            // 五行标注（小号字，在名称下方偏内）
-            textPaint.setColor(0xFF6B8E6B);
-            float wx = centerX + (textR - 10 * density) * (float) Math.sin(rad);
-            float wy = centerY - (textR - 10 * density) * (float) Math.cos(rad) + 3 * density;
-            canvas.drawText(XIU_WUXING[i], wx, wy, textPaint);
+            float nx = centerX + textR * (float) Math.cos(rad);
+            float ny = centerY + textR * (float) Math.sin(rad) + 4 * density;
+            canvas.drawText(XIU_28[i], nx, ny, textPaint);
         }
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 3. 一百二十分金
+    // 4. 一百二十分金
     // ========================================================================
-    private void draw120Fenjin(Canvas canvas) {
-        float ringWidth = 16 * density;
-        float outerR = radius - 34 * density;
+    private void drawFenjin(Canvas canvas) {
+        float ringWidth = 14 * density;
+        float outerR = radius - 37 * density;
         float innerR = outerR - ringWidth;
-
-        // 120个分金位，每3度一个
-        float step = 3f;
-
-        // 绘制分金文字（只标注有意义的分金位）
         float textR = (outerR + innerR) / 2f;
-        textPaint.setTextSize(8 * density);
+
+        // 120个分金，每3度一个
+        float step = 3f;
+        textPaint.setTextSize(7 * density);
 
         for (int i = 0; i < 120; i++) {
-            float angleDeg = i * step; // 从0度开始
-            float rad = (float) Math.toRadians(angleDeg);
-
+            float angleDeg = i * step;
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
             // 只显示部分分金（避免太拥挤）
-            // 每15度（一个山位）显示5个分金中的部分
-            // 实际罗盘通常只标注"丙午丁"等
-            int posInSector = i % 5;
-
-            // 只标注中间3个分金（跳过首尾）
-            if (posInSector == 0 || posInSector == 4) continue;
-
-            String text = FENJIN_120[i];
-
-            // 阳干金色，阴干暗色
-            if (posInSector == 1 || posInSector == 3) {
-                // 阳干
-                textPaint.setColor(COLOR_TEXT_GOLD);
-            } else {
-                // 阴干
-                textPaint.setColor(COLOR_TEXT_DARK);
-            }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 3 * density;
-            canvas.drawText(text, tx, ty, textPaint);
+            int posInFive = i % 5;
+            if (posInFive != 2) continue;  // 只显示中间的分金
+            
+            String label = FENJIN_LABELS[posInFive * 2];
+            if (label.isEmpty()) continue;
+            
+            textPaint.setColor(COLOR_TEXT_GRAY);
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 3 * density;
+            canvas.drawText(label, tx, ty, textPaint);
         }
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 4. 六十甲子
+    // 5. 六十甲子
     // ========================================================================
-    private void draw60Sexagenary(Canvas canvas) {
-        float ringWidth = 18 * density;
-        float outerR = radius - 52 * density;
+    private void drawSexagenary(Canvas canvas) {
+        float ringWidth = 16 * density;
+        float outerR = radius - 53 * density;
         float innerR = outerR - ringWidth;
-
-        // 60甲子对应360度，每个占6度
-        float step = 360f / 60f;
         float textR = (outerR + innerR) / 2f;
-        textPaint.setTextSize(10 * density);
+
+        // 60个甲子，每6度一个
+        float step = 360f / 60f;
+        textPaint.setTextSize(9 * density);
 
         for (int i = 0; i < 60; i++) {
             float angleDeg = i * step;
-            float rad = (float) Math.toRadians(angleDeg);
-
-            // 甲（天干之首）用红色
-            if (SEXAGENARY[i].startsWith("甲")) {
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
+            // 甲字红色，庚丙金色，其他灰色
+            String label = SEXAGENARY[i];
+            if (label.startsWith("甲")) {
                 textPaint.setColor(COLOR_TEXT_RED);
-            } else if (SEXAGENARY[i].startsWith("庚") || SEXAGENARY[i].startsWith("丙")) {
+            } else if (label.startsWith("庚") || label.startsWith("丙")) {
                 textPaint.setColor(COLOR_TEXT_GOLD);
             } else {
-                textPaint.setColor(COLOR_TEXT_DARK);
+                textPaint.setColor(COLOR_TEXT_GRAY);
             }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 4 * density;
-            canvas.drawText(SEXAGENARY[i], tx, ty, textPaint);
+            
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 3.5f * density;
+            canvas.drawText(label, tx, ty, textPaint);
         }
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 5. 天盘缝针（24山 +7.5°）
+    // 6. 天盘缝针（24山 +7.5°）
     // ========================================================================
     private void drawTianPan(Canvas canvas) {
-        float ringWidth = 18 * density;
-        float outerR = radius - 72 * density;
+        float ringWidth = 16 * density;
+        float outerR = radius - 71 * density;
         float innerR = outerR - ringWidth;
-
         float textR = (outerR + innerR) / 2f;
 
-        // 绘制"天盘"标注
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0xFF1A1A2E);
-        // 在正北位置画一个半透明背景
-        textPaint.setTextSize(9 * density);
-        textPaint.setColor(COLOR_TEXT_BLUE);
-        float labelRad = (float) Math.toRadians(180);
-        float lx = centerX + (textR - 8 * density) * (float) Math.sin(labelRad);
-        float ly = centerY - (textR - 8 * density) * (float) Math.cos(labelRad) + 3 * density;
-        canvas.drawText("缝", lx, ly, textPaint);
+        textPaint.setTextSize(12 * density);
 
-        // 天盘24山（+7.5°偏移）
-        textPaint.setTextSize(13 * density);
         for (int i = 0; i < 24; i++) {
-            // 天盘缝针比地盘正针顺时针偏移7.5度
+            // 天盘缝针 = 地盘正针 + 7.5°
             float angleDeg = MOUNTAIN_ANGLES[i] + 7.5f;
             if (angleDeg >= 360) angleDeg -= 360;
-            float rad = (float) Math.toRadians(angleDeg);
-
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
             // 子午卯酉红色
-            if (i == 0 || i == 6 || i == 12 || i == 18) {
+            if (i == 1 || i == 7 || i == 13 || i == 19) {  // 子午卯酉
                 textPaint.setColor(COLOR_TEXT_RED);
             } else {
-                textPaint.setColor(COLOR_TEXT_BLUE);
+                textPaint.setColor(COLOR_TEXT_BLUE);  // 蓝色表示天盘
             }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 5 * density;
+            
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 4.5f * density;
             canvas.drawText(MOUNTAINS_24[i], tx, ty, textPaint);
         }
+
+        // 标注"天"字
+        textPaint.setTextSize(8 * density);
+        textPaint.setColor(COLOR_TEXT_BLUE);
+        float tianRad = (float) Math.toRadians(270 - 90);  // 正北偏下
+        float tianX = centerX + (textR - 6 * density) * (float) Math.cos(tianRad);
+        float tianY = centerY + (textR - 6 * density) * (float) Math.sin(tianRad) + 3 * density;
+        canvas.drawText("天", tianX, tianY, textPaint);
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 6. 人盘中针（24山 -7.5°）
+    // 7. 人盘中针（24山 -7.5°）
     // ========================================================================
     private void drawRenPan(Canvas canvas) {
-        float ringWidth = 18 * density;
-        float outerR = radius - 92 * density;
+        float ringWidth = 16 * density;
+        float outerR = radius - 89 * density;
         float innerR = outerR - ringWidth;
-
         float textR = (outerR + innerR) / 2f;
 
-        // 绘制"人盘"标注
-        textPaint.setTextSize(9 * density);
-        textPaint.setColor(COLOR_TEXT_GREEN);
-        float labelRad = (float) Math.toRadians(180);
-        float lx = centerX + (textR - 8 * density) * (float) Math.sin(labelRad);
-        float ly = centerY - (textR - 8 * density) * (float) Math.cos(labelRad) + 3 * density;
-        canvas.drawText("中", lx, ly, textPaint);
+        textPaint.setTextSize(12 * density);
 
-        // 人盘24山（-7.5°偏移）
-        textPaint.setTextSize(13 * density);
         for (int i = 0; i < 24; i++) {
-            // 人盘中针比地盘正针逆时针偏移7.5度
+            // 人盘中针 = 地盘正针 - 7.5°
             float angleDeg = MOUNTAIN_ANGLES[i] - 7.5f;
             if (angleDeg < 0) angleDeg += 360;
-            float rad = (float) Math.toRadians(angleDeg);
-
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
             // 子午卯酉红色
-            if (i == 0 || i == 6 || i == 12 || i == 18) {
+            if (i == 1 || i == 7 || i == 13 || i == 19) {
                 textPaint.setColor(COLOR_TEXT_RED);
             } else {
-                textPaint.setColor(COLOR_TEXT_GREEN);
+                textPaint.setColor(COLOR_TEXT_GREEN);  // 绿色表示人盘
             }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 5 * density;
+            
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 4.5f * density;
             canvas.drawText(MOUNTAINS_24[i], tx, ty, textPaint);
         }
+
+        // 标注"人"字
+        textPaint.setTextSize(8 * density);
+        textPaint.setColor(COLOR_TEXT_GREEN);
+        float renRad = (float) Math.toRadians(270 - 90);
+        float renX = centerX + (textR - 6 * density) * (float) Math.cos(renRad);
+        float renY = centerY + (textR - 6 * density) * (float) Math.sin(renRad) + 3 * density;
+        canvas.drawText("人", renX, renY, textPaint);
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 7. 地盘正针（24山 0°）
+    // 8. 地盘正针（24山主圈）
     // ========================================================================
     private void drawDiPan(Canvas canvas) {
         float ringWidth = 20 * density;
-        float outerR = radius - 112 * density;
+        float outerR = radius - 107 * density;
         float innerR = outerR - ringWidth;
-
         float textR = (outerR + innerR) / 2f;
-        textPaint.setTextSize(15 * density);
+
+        textPaint.setTextSize(14 * density);
 
         for (int i = 0; i < 24; i++) {
             float angleDeg = MOUNTAIN_ANGLES[i];
-            float rad = (float) Math.toRadians(angleDeg);
-
-            // 子午卯酉（正北正南正东正西）用红色
-            if (i == 0 || i == 6 || i == 12 || i == 18) {
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
+            // 子午卯酉（正北、正南、正东、正西）红色加大
+            if (i == 1 || i == 7 || i == 13 || i == 19) {
                 textPaint.setColor(COLOR_TEXT_RED);
-                textPaint.setTextSize(17 * density);
+                textPaint.setTextSize(16 * density);
             } else {
                 textPaint.setColor(COLOR_TEXT_GOLD);
-                textPaint.setTextSize(15 * density);
+                textPaint.setTextSize(14 * density);
             }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 6 * density;
+            
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 5 * density;
             canvas.drawText(MOUNTAINS_24[i], tx, ty, textPaint);
         }
 
+        // 标注"地"字
+        textPaint.setTextSize(9 * density);
+        textPaint.setColor(COLOR_TEXT_GOLD);
+        float diRad = (float) Math.toRadians(270 - 90);
+        float diX = centerX + (textR - 7 * density) * (float) Math.cos(diRad);
+        float diY = centerY + (textR - 7 * density) * (float) Math.sin(diRad) + 3.5f * density;
+        canvas.drawText("地", diX, diY, textPaint);
+
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setStrokeWidth(1.5f * density);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
     // ========================================================================
-    // 8. 六十四卦
+    // 9. 六十四卦
     // ========================================================================
-    private void draw64Hexagram(Canvas canvas) {
-        float ringWidth = 22 * density;
-        float outerR = radius - 134 * density;
+    private void drawHexagram(Canvas canvas) {
+        float ringWidth = 18 * density;
+        float outerR = radius - 129 * density;
         float innerR = outerR - ringWidth;
-
-        // 六十四卦每卦占5.625度
-        float step = 360f / 64f;
-
-        // 绘制卦名
         float textR = (outerR + innerR) / 2f;
-        textPaint.setTextSize(10 * density);
+
+        // 64卦，每卦5.625度
+        float step = 360f / 64f;
+        textPaint.setTextSize(9 * density);
 
         for (int i = 0; i < 64; i++) {
-            float angleDeg = HEX_ANGLES[i];
-            float rad = (float) Math.toRadians(angleDeg);
-
-            // 八纯卦（乾坎艮震巽离坤兑）用红色
-            boolean isPure = isPureHexagram(HEXAGRAM_64[i]);
+            float angleDeg = i * step;
+            float rad = (float) Math.toRadians(angleDeg - 90);
+            
+            // 八纯卦红色
+            boolean isPure = (i == 0 || i == 7 || i == 17 || i == 24 || 
+                             i == 33 || i == 42 || i == 51 || i == 58);
             if (isPure) {
                 textPaint.setColor(COLOR_TEXT_RED);
             } else {
                 textPaint.setColor(COLOR_TEXT_GOLD);
             }
-
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 4 * density;
+            
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 4 * density;
             canvas.drawText(HEXAGRAM_64[i], tx, ty, textPaint);
         }
 
         // 圈边界线
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
+        paint.setColor(COLOR_RING_DARK);
         canvas.drawCircle(centerX, centerY, outerR, paint);
         canvas.drawCircle(centerX, centerY, innerR, paint);
     }
 
-    /**
-     * 判断是否为八纯卦
-     */
-    private boolean isPureHexagram(String name) {
-        return name.equals("乾") || name.equals("坤") || name.equals("坎") ||
-               name.equals("离") || name.equals("震") || name.equals("艮") ||
-               name.equals("巽") || name.equals("兑");
-    }
-
     // ========================================================================
-    // 9. 后天八卦
+    // 10. 后天八卦
     // ========================================================================
     private void drawBagua(Canvas canvas) {
-        float baguaR = radius - 160 * density;
-        textPaint.setTextSize(16 * density);
+        float baguaR = radius - 152 * density;
+        float dotR = 13 * density;
 
         for (int i = 0; i < BAGUA.length; i++) {
-            float rad = (float) Math.toRadians(BAGUA_ANGLES[i]);
-            float bx = centerX + baguaR * (float) Math.sin(rad);
-            float by = centerY - baguaR * (float) Math.cos(rad);
+            float rad = (float) Math.toRadians(BAGUA_ANGLES[i] - 90);
+            float bx = centerX + baguaR * (float) Math.cos(rad);
+            float by = centerY + baguaR * (float) Math.sin(rad);
 
-            // 八卦背景圆
-            float dotR = 14 * density;
-            baguaPaint.setColor(COLOR_BAGUA_BG);
-            canvas.drawCircle(bx, by, dotR, baguaPaint);
+            // 八卦背景
+            sectorPaint.setColor(COLOR_BAGUA_BG);
+            canvas.drawCircle(bx, by, dotR, sectorPaint);
 
-            // 八卦文字颜色
-            if (i == 0) textPaint.setColor(Color.BLACK);      // 坎(水)=黑
-            else if (i == 4) textPaint.setColor(COLOR_TEXT_RED); // 离(火)=红
+            // 八卦边框
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(1 * density);
+            paint.setColor(COLOR_RING_DARK);
+            canvas.drawCircle(bx, by, dotR, paint);
+
+            // 八卦文字
+            if (i == 0) textPaint.setColor(Color.BLACK);       // 坎=黑
+            else if (i == 4) textPaint.setColor(COLOR_TEXT_RED); // 离=红
             else textPaint.setColor(COLOR_TEXT_GOLD);
-
-            canvas.drawText(BAGUA[i], bx, by + 6 * density, textPaint);
+            
+            textPaint.setTextSize(15 * density);
+            canvas.drawText(BAGUA[i], bx, by + 5 * density, textPaint);
         }
 
         // 八卦外圈
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(1 * density);
-        paint.setColor(0xFF3D3D55);
-        canvas.drawCircle(centerX, centerY, baguaR + 18 * density, paint);
-        canvas.drawCircle(centerX, centerY, baguaR - 18 * density, paint);
+        paint.setColor(COLOR_RING_DARK);
+        canvas.drawCircle(centerX, centerY, baguaR + dotR + 3 * density, paint);
+        canvas.drawCircle(centerX, centerY, baguaR - dotR - 3 * density, paint);
     }
 
     // ========================================================================
-    // 10. 360度刻度
+    // 11. 360度刻度
     // ========================================================================
-    private void drawDegreeTicks(Canvas canvas) {
-        float outerR = radius - 8 * density;
+    private void drawDegreeScale(Canvas canvas) {
+        float outerR = radius - 172 * density;
         float innerR;
 
         for (int i = 0; i < 360; i++) {
-            float angle = (float) Math.toRadians(i);
+            float angle = (float) Math.toRadians(i - 90);
 
             if (i % 15 == 0) {
-                // 15度（24山刻度）— 长线
+                // 15度刻度 - 长线
                 tickPaint.setStrokeWidth(2.5f * density);
                 tickPaint.setColor(COLOR_TEXT_GOLD);
-                innerR = radius - 28 * density;
+                innerR = outerR - 14 * density;
             } else if (i % 5 == 0) {
-                // 5度 — 中线
+                // 5度刻度 - 中线
                 tickPaint.setStrokeWidth(1.5f * density);
-                tickPaint.setColor(0xFFA08060);
-                innerR = radius - 20 * density;
+                tickPaint.setColor(COLOR_TEXT_GRAY);
+                innerR = outerR - 10 * density;
             } else {
-                // 1度 — 短线
+                // 1度刻度 - 短线
                 tickPaint.setStrokeWidth(0.8f * density);
-                tickPaint.setColor(0xFF605040);
-                innerR = radius - 14 * density;
+                tickPaint.setColor(COLOR_RING_DARK);
+                innerR = outerR - 6 * density;
             }
 
-            float startX = centerX + outerR * (float) Math.sin(angle);
-            float startY = centerY - outerR * (float) Math.cos(angle);
-            float endX = centerX + innerR * (float) Math.sin(angle);
-            float endY = centerY - innerR * (float) Math.cos(angle);
-
-            canvas.drawLine(startX, startY, endX, endY, tickPaint);
+            float sx = centerX + outerR * (float) Math.cos(angle);
+            float sy = centerY + outerR * (float) Math.sin(angle);
+            float ex = centerX + innerR * (float) Math.cos(angle);
+            float ey = centerY + innerR * (float) Math.sin(angle);
+            canvas.drawLine(sx, sy, ex, ey, tickPaint);
         }
 
-        // 360度数字标注（每30度）
-        textPaint.setTextSize(10 * density);
-        textPaint.setColor(COLOR_TEXT_GOLD);
-        float textR = radius - 36 * density;
+        // 30度数字
+        textPaint.setTextSize(9 * density);
+        textPaint.setColor(COLOR_TEXT_GRAY);
+        float textR = outerR - 18 * density;
         for (int i = 0; i < 360; i += 30) {
-            float rad = (float) Math.toRadians(i);
-            float tx = centerX + textR * (float) Math.sin(rad);
-            float ty = centerY - textR * (float) Math.cos(rad) + 4 * density;
+            if (i == 0) continue;  // 正北用"北"字表示
+            float rad = (float) Math.toRadians(i - 90);
+            float tx = centerX + textR * (float) Math.cos(rad);
+            float ty = centerY + textR * (float) Math.sin(rad) + 3.5f * density;
             canvas.drawText(String.valueOf(i), tx, ty, textPaint);
         }
 
-        // 四正方向标注（子午卯酉/北南东西）
-        textPaint.setTextSize(11 * density);
+        // 四正方向标注（北南东西）
+        textPaint.setTextSize(10 * density);
         String[] cardinal = {"北", "东", "南", "西"};
-        float[] cardinalAngles = {0f, 90f, 180f, 270f};
-        float cardR = radius - 44 * density;
+        int[] cardinalAngles = {0, 90, 180, 270};
+        float cardR = outerR - 22 * density;
         for (int i = 0; i < 4; i++) {
-            float rad = (float) Math.toRadians(cardinalAngles[i]);
+            float rad = (float) Math.toRadians(cardinalAngles[i] - 90);
             textPaint.setColor(i == 2 ? COLOR_TEXT_RED : COLOR_TEXT_GOLD);
-            float tx = centerX + cardR * (float) Math.sin(rad);
-            float ty = centerY - cardR * (float) Math.cos(rad) + 4 * density;
+            float tx = centerX + cardR * (float) Math.cos(rad);
+            float ty = centerY + cardR * (float) Math.sin(rad) + 4 * density;
             canvas.drawText(cardinal[i], tx, ty, textPaint);
         }
     }
 
     // ========================================================================
-    // 11. 中心太极圈
+    // 12. 天池（中心太极圈）
     // ========================================================================
-    private void drawCenterCircle(Canvas canvas) {
-        float centerR = 16 * density;
+    private void drawTianchi(Canvas canvas) {
+        float tianchiR = 22 * density;
 
-        // 外圈
+        // 天池外框（金色）
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2 * density);
-        paint.setColor(COLOR_RING_OUTER);
-        canvas.drawCircle(centerX, centerY, centerR + 4 * density, paint);
+        paint.setColor(COLOR_RING_GOLD);
+        canvas.drawCircle(centerX, centerY, tianchiR + 4 * density, paint);
 
-        // 内圆背景
+        // 天池内背景
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(0xFF2D2D44);
-        canvas.drawCircle(centerX, centerY, centerR, paint);
+        paint.setColor(COLOR_CENTER_BG);
+        canvas.drawCircle(centerX, centerY, tianchiR, paint);
+
+        // 天池底部红线（正南北方向）
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1 * density);
+        paint.setColor(COLOR_RED_LINE);
+        
+        float lineR = tianchiR - 2 * density;
+        // 上端（指南端）
+        canvas.drawLine(centerX, centerY - lineR, centerX, centerY - 4 * density, paint);
+        // 下端（指北端）
+        canvas.drawLine(centerX, centerY + 4 * density, centerX, centerY + lineR, paint);
+
+        // 红线两端的两个小红点（指北端）
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(COLOR_RED_LINE);
+        float dotR = 1.5f * density;
+        canvas.drawCircle(centerX, centerY + 6 * density, dotR, paint);
+        canvas.drawCircle(centerX, centerY + 9 * density, dotR, paint);
 
         // 中心小圆点
-        paint.setColor(COLOR_CENTER_DOT);
-        canvas.drawCircle(centerX, centerY, 3 * density, paint);
+        paint.setColor(COLOR_RING_GOLD);
+        canvas.drawCircle(centerX, centerY, 2.5f * density, paint);
     }
 
     // ========================================================================
-    // 12. 指针系统
+    // 13. 指针（磁针）
     // ========================================================================
     private void drawNeedle(Canvas canvas) {
-        float needleLen = radius - 160 * density;
-        float needleBase = 16 * density;
-        float needleWidth = 7 * density;
+        float needleLen = 55 * density;  // 指针长度
+        float needleBase = 14 * density;  // 指针底座宽度
+        float tipWidth = 2.5f * density;  // 针尖宽度
 
         canvas.save();
         // 指针随方位角旋转
         canvas.rotate(azimuth, centerX, centerY);
 
-        // 红色指针（南 — 指向当前方位）
-        needlePaint.setColor(COLOR_NEEDLE_RED);
+        // 红色指针（南端 - 尖头）
+        needlePaint.setColor(COLOR_NEEDLE_SOUTH);
+        needlePaint.setStyle(Paint.Style.FILL);
+        
         Path southPath = new Path();
-        southPath.moveTo(centerX - needleWidth, centerY + needleBase);
-        southPath.lineTo(centerX, centerY - needleLen);
-        southPath.lineTo(centerX + needleWidth, centerY + needleBase);
+        southPath.moveTo(centerX, centerY - needleLen);  // 尖端
+        southPath.lineTo(centerX - tipWidth, centerY);   // 左宽
+        southPath.lineTo(centerX + tipWidth, centerY);  // 右宽
         southPath.close();
         canvas.drawPath(southPath, needlePaint);
 
-        // 黑色指针（北 — 指向相反方向）
-        needlePaint.setColor(COLOR_NEEDLE_BLACK);
+        // 黑色指针（北端 - 有角）
+        needlePaint.setColor(COLOR_NEEDLE_NORTH);
+        
         Path northPath = new Path();
-        northPath.moveTo(centerX - needleWidth, centerY - needleBase);
-        northPath.lineTo(centerX, centerY + needleLen);
-        northPath.lineTo(centerX + needleWidth, centerY - needleBase);
+        northPath.moveTo(centerX, centerY + needleLen);  // 尖端
+        northPath.lineTo(centerX - needleBase, centerY);  // 左角
+        northPath.lineTo(centerX + needleBase, centerY); // 右角
         northPath.close();
         canvas.drawPath(northPath, needlePaint);
 
-        // 指针中心覆盖
-        needlePaint.setColor(COLOR_CENTER_DOT);
-        canvas.drawCircle(centerX, centerY, 5 * density, needlePaint);
+        // 指针中心覆盖（天池顶部）
+        needlePaint.setColor(COLOR_CENTER_BG);
+        canvas.drawCircle(centerX, centerY, 10 * density, needlePaint);
+        
+        // 中心金点
+        needlePaint.setColor(COLOR_RING_GOLD);
+        canvas.drawCircle(centerX, centerY, 3 * density, needlePaint);
 
         canvas.restore();
     }
 
     // ========================================================================
-    // 13. 方位信息显示
+    // 14. 信息显示
     // ========================================================================
-    private void drawDirectionText(Canvas canvas) {
-        textPaint.setColor(COLOR_TEXT_WHITE);
-        textPaint.setTextSize(13 * density);
+    private void drawInfo(Canvas canvas) {
+        // 顶部信息栏
         textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setTextSize(12 * density);
+        textPaint.setColor(COLOR_TEXT_WHITE);
 
-        // 计算当前指向的24山索引
-        int mountainIndex = getCurrentMountainIndex();
-        String mountainName = MOUNTAINS_24[mountainIndex];
+        int mountainIdx = getCurrentMountain(azimuth);
+        String mountainName = MOUNTAINS_24[mountainIdx];
         String directionName = getDirectionName(azimuth);
-
-        // 计算当前指向的二十八星宿
         String xiuName = getCurrentXiu();
 
-        String info = String.format("方位: %.1f°  %s山  %s  星宿: %s",
+        String info = String.format("方位: %.1f°  %s山  %s  %s",
                 azimuth, mountainName, directionName, xiuName);
-        canvas.drawText(info, 16 * density, 32 * density, textPaint);
+        canvas.drawText(info, 12 * density, 24 * density, textPaint);
 
-        // 底部信息：三针三盘
+        // 底部三盘信息
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setColor(0xFF605040);
         textPaint.setTextSize(9 * density);
+        textPaint.setColor(COLOR_TEXT_GRAY);
 
-        // 显示三盘当前指向
-        int tianPanIdx = getTianPanIndex();
-        int renPanIdx = getRenPanIndex();
-        String tianInfo = String.format("天盘:%s  人盘:%s  地盘:%s",
-                MOUNTAINS_24[tianPanIdx],
-                MOUNTAINS_24[renPanIdx],
-                mountainName);
-        canvas.drawText(tianInfo, centerX, getHeight() - 12 * density, textPaint);
+        int tianIdx = getTianPanMountain(azimuth);
+        int renIdx = getRenPanMountain(azimuth);
+
+        String bottomInfo = String.format("天盘:%s  人盘:%s  地盘:%s",
+                MOUNTAINS_24[tianIdx], MOUNTAINS_24[renIdx], mountainName);
+        canvas.drawText(bottomInfo, centerX, getHeight() - 10 * density, textPaint);
+
+        textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
-    /**
-     * 获取当前方位对应的24山索引（地盘正针）
-     */
-    private int getCurrentMountainIndex() {
-        float angle = azimuth % 360;
-        if (angle < 0) angle += 360;
-        int index = (int) Math.round(angle / 15f) % 24;
-        return index;
-    }
+    // ============ 辅助方法 ============
 
-    /**
-     * 获取天盘缝针索引（+7.5°偏移）
-     */
-    private int getTianPanIndex() {
-        float angle = (azimuth - 7.5f) % 360;
+    private int getCurrentMountain(float angle) {
+        angle = angle % 360;
         if (angle < 0) angle += 360;
         return (int) Math.round(angle / 15f) % 24;
     }
 
-    /**
-     * 获取人盘中针索引（-7.5°偏移）
-     */
-    private int getRenPanIndex() {
-        float angle = (azimuth + 7.5f) % 360;
-        if (angle < 0) angle += 360;
-        return (int) Math.round(angle / 15f) % 24;
+    private int getTianPanMountain(float angle) {
+        float a = angle - 7.5f;
+        a = a % 360;
+        if (a < 0) a += 360;
+        return (int) Math.round(a / 15f) % 24;
     }
 
-    /**
-     * 获取当前指向的二十八星宿
-     */
-    private String getCurrentXiu() {
-        float angle = azimuth % 360;
-        if (angle < 0) angle += 360;
+    private int getRenPanMountain(float angle) {
+        float a = angle + 7.5f;
+        a = a % 360;
+        if (a < 0) a += 360;
+        return (int) Math.round(a / 15f) % 24;
+    }
 
+    private String getCurrentXiu(float angle) {
+        angle = angle % 360;
+        if (angle < 0) angle += 360;
         float step = 360f / 28f;
         int closest = 0;
         float minDiff = 360;
-
         for (int i = 0; i < 28; i++) {
             float diff = Math.abs(angle - XIU_ANGLES[i]);
             if (diff > 180) diff = 360 - diff;
@@ -900,20 +797,17 @@ public class CompassView extends View {
         return XIU_28[closest];
     }
 
-    /**
-     * 获取方位名称
-     */
     private String getDirectionName(float degrees) {
-        String[] directions = {"北", "东北", "东", "东南", "南", "西南", "西", "西北"};
-        float[] ranges = {0, 45, 90, 135, 180, 225, 270, 315};
-        String closest = directions[0];
+        String[] dirs = {"北", "东北", "东", "东南", "南", "西南", "西", "西北"};
+        int[] ranges = {0, 45, 90, 135, 180, 225, 270, 315};
+        String closest = dirs[0];
         float minDiff = 360;
         for (int i = 0; i < ranges.length; i++) {
             float diff = Math.abs(degrees - ranges[i]);
             if (diff > 180) diff = 360 - diff;
             if (diff < minDiff) {
                 minDiff = diff;
-                closest = directions[i];
+                closest = dirs[i];
             }
         }
         return closest;
