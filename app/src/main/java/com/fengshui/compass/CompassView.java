@@ -737,7 +737,7 @@ public class CompassView extends View {
         int mountainIdx = getCurrentMountain(azimuth);
         String mountainName = MOUNTAINS_24[mountainIdx];
         String directionName = getDirectionName(azimuth);
-        String xiuName = getCurrentXiu();
+        String xiuName = getCurrentXiu(azimuth);
 
         String info = String.format("方位: %.1f°  %s山  %s  %s",
                 azimuth, mountainName, directionName, xiuName);
