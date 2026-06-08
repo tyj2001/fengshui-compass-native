@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 背景圆 -->
+    <path
+        android:fillColor="#FF1A1A2E"
+        android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+    <!-- 外圈 -->
+    <path
+        android:strokeColor="#FFD4A574"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-44,0a44,44 0,1 1,88 0a44,44 0,1 1,-88 0" />
+    <!-- 指针红色（南） -->
+    <path
+        android:fillColor="#FFE74C3C"
+        android:pathData="M50,20L54,10L58,20Z" />
+    <!-- 指针黑色（北） -->
+    <path
+        android:fillColor="#FF2C3E50"
+        android:pathData="M50,88L54,98L58,88Z" />
+    <!-- 中心点 -->
+    <circle
+        android:cx="54"
+        android:cy="54"
+        android:fillColor="#FFD4A574"
+        android:radius="3" />
+</vector>
